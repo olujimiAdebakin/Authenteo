@@ -6,6 +6,7 @@ import (
 	"github.com/caarlos0/env/v9"
 	"github.com/joho/godotenv"
 	"log"
+	"strconv"
 )
 
 type Config struct {

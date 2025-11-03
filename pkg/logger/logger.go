@@ -1,9 +1,10 @@
 package logger
 
 import (
+	"sync"
+
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
-	"sync"
 )
 
 // Global variables for the logger instances and synchronization control.
@@ -105,6 +106,14 @@ func Fatal(msg string, keysAndValues ...interface{}) {
 		Sugar.Fatalw(msg, keysAndValues...)
 	}
 }
+
+
+// Field creates a field for structured logging.
+// It's a convenience wrapper around zap.Any() for creating structured log fields.
+func Field(key string, value interface{}) zap.Field {
+	return zap.Any(key, value)
+}
+
 
 // Sync flushes any buffered log entries to the output destination (like stdout or a file).
 // This is critical to call when the application is shutting down gracefully to ensure

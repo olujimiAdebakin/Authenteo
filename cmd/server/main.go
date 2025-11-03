@@ -39,7 +39,7 @@ func main() {
 	}
 
 	// Initialize router with dependencies
-	r := router.NewRouter(cfg)
+	r := router.SetupRouter(cfg)
 
 	// Create HTTP server
 	srv := &http.Server{
