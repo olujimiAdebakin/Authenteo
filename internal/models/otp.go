@@ -1,5 +1,7 @@
 package models
 
+type OTPType string
+
 type OTP struct {
 	BaseModel
 	UserID *int64 `db:"user_id" json:"-"`
