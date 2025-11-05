@@ -78,11 +78,11 @@ func (h *UserHandler) UpdateProfile(c *gin.Context) {
 		return
 	}
 
-	var req struct {
-		FirstName string `json:"first_name"`
-		LastName  string `json:"last_name"`
-		Email     string `json:"email" binding:"omitempty,email"`
-	}
+	// var req struct {
+	// 	FirstName string `json:"first_name"`
+	// 	LastName  string `json:"last_name"`
+	// 	Email     string `json:"email" binding:"omitempty,email"`
+	// }
 
 	 var req UpdateProfileRequest
 
