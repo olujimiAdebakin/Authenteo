@@ -4,7 +4,7 @@ import (
 	"net/http"
 
 	"authentio/internal/service"
-
+	"authentio/internal/handler"
 	"github.com/gin-gonic/gin"
 )
 
@@ -100,9 +100,11 @@ func (h *TwoFAHandler) Disable2FA(c *gin.Context) {
 // @Failure 500 {object} map[string]string "Failed to send OTP email"
 // @Router /2fa/sendOtp [post]
 func (h *TwoFAHandler) SendOTP(c *gin.Context) {
-	var req struct {
-		Email string `json:"email" binding:"required,email"`
-	}
+	// var req struct {
+	// 	Email string `json:"email" binding:"required,email"`
+	// }
+
+	var req SendOTPRequest
 
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
