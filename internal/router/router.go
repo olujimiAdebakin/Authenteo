@@ -27,7 +27,7 @@ func SetupRouter(h *handler.Handler, redis *redis.Client, jwtManager *jwt.Manage
 	r.Use(middleware.GeoIPMiddleware())
 
 	// Choose rate limiter based on environment
-	if os.Getenv("ENV") == "production" {
+	if os.Getenv("APP_ENV") == "production" {
 		r.Use(middleware.RateLimiterMiddlewareRedis(redis))
 	} else {
 		r.Use(middleware.RateLimiterMiddlewareInMem())
@@ -48,6 +48,11 @@ func SetupRouter(h *handler.Handler, redis *redis.Client, jwtManager *jwt.Manage
 		// Public authentication routes
 		auth := api.Group("/auth")
 		{
+
+			// Google OAuth2 authentication
+			authGroup.GET("/google/login", h.Auth.GoogleLogin)
+                  authGroup.GET("/google/callback", h.Auth.GoogleCallback)
+			
 			// Basic authentication
 			auth.POST("/register", h.Auth.Register)
 			auth.POST("/login", h.Auth.Login)

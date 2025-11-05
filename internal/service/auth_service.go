@@ -6,14 +6,20 @@ import (
 	"encoding/hex"
 	"errors"
 	"time"
+	"fmt"
 
+	"database/sql"
 	"authentio/internal/constants"
 	"authentio/internal/models"
+	_"authentio/internal/config"
+	"google.golang.org/api/idtoken"
+
 	"authentio/internal/repository"
 	"authentio/pkg/jwt"
 	"authentio/pkg/logger"
 	"authentio/pkg/password"
 	"authentio/pkg/response"
+	"golang.org/x/oauth2"
 )
 
 type AuthService struct {
@@ -22,6 +28,7 @@ type AuthService struct {
 	otpRepo     repository.OTPRepository
 	tokenRepo   repository.TokenRepository
 	jwtManager  *jwt.Manager
+	googleClient *oauth2.Config
 }
 
 // NewAuthService constructs the AuthService with its dependencies.
@@ -31,6 +38,7 @@ func NewAuthService(
 	otpRepo repository.OTPRepository,
 	tokenRepo repository.TokenRepository,
 	jwtManager *jwt.Manager,
+	googleClient *oauth2.Config,
 ) *AuthService {
 	return &AuthService{
 		userRepo:   userRepo,
@@ -38,24 +46,25 @@ func NewAuthService(
 		twoFARepo:  twoFARepo,
 		tokenRepo:  tokenRepo,
 		jwtManager: jwtManager,
+		googleClient: googleClient,
 	}
 }
 
-type RegisterResponse struct {
-	User    response.UserResponse `json:"user"`
-	Message string                `json:"message"`
-}
+// type RegisterResponse struct {
+// 	User    response.UserResponse `json:"user"`
+// 	Message string                `json:"message"`
+// }
 
-// LoginResponse is returned after successful login
-type LoginResponse struct {
-	User         response.UserResponse `json:"user"`
-	AccessToken  string               `json:"access_token"`
-	RefreshToken string               `json:"refresh_token"`
-	ExpiresIn    int                  `json:"expires_in"`    // Access token expiration in seconds
-}
+// // LoginResponse is returned after successful login
+// type LoginResponse struct {
+// 	User         response.UserResponse `json:"user"`
+// 	AccessToken  string               `json:"access_token"`
+// 	RefreshToken string               `json:"refresh_token"`
+// 	ExpiresIn    int                  `json:"expires_in"`    // Access token expiration in seconds
+// }
 
 // Register handles user registration flow.
-func (s *AuthService) Register(ctx context.Context, req models.RegisterRequest)  (*RegisterResponse, error) {
+func (s *AuthService) Register(ctx context.Context, req models.RegisterRequest)  (*response.RegisterResponse, error) {
 	existingUser, _ := s.userRepo.FindByEmail(ctx, req.Email)
 	if existingUser != nil {
 		return nil, errors.New("email already exists")
@@ -95,14 +104,14 @@ func (s *AuthService) Register(ctx context.Context, req models.RegisterRequest) 
 	// logger.Info("user registered", "email", req.Email)
 
 	logger.Info("user registered", "email", req.Email)
-      return &RegisterResponse{
+      return &response.RegisterResponse{
 	User:  userResponse,
 	Message: "Registration successful",
 	}, nil
 }
 
 // Login validates credentials and returns a signed JWT.
-func (s *AuthService) Login(ctx context.Context, req models.LoginRequest) (*LoginResponse, error) {
+func (s *AuthService) Login(ctx context.Context, req models.LoginRequest) (*response.LoginResponse, error) {
 	user, err := s.userRepo.FindByEmail(ctx, req.Email)
 	if err != nil || user == nil {
 		return nil, errors.New("invalid email or password")
@@ -147,13 +156,93 @@ func (s *AuthService) Login(ctx context.Context, req models.LoginRequest) (*Logi
 
 	logger.Info("user logged in", "email", req.Email)
 
-	return &LoginResponse{
+	return &response.LoginResponse{
 		User:         userResponse,
 		AccessToken:  accessToken,
 		RefreshToken: refreshToken.Token,
 		ExpiresIn:    3600, // 1 hour - should match your JWT expiration
 	}, nil
 }
+
+
+func (s *AuthService) GoogleAuth(ctx context.Context, idTokenStr string, audience string) (*response.LoginResponse, error) {
+	// Validate the ID token using Google's ID token verifier
+	payload, err := idtoken.Validate(ctx, idTokenStr, audience)
+	if err != nil {
+		return nil, fmt.Errorf("invalid Google token: %w", err)
+	}
+
+	// Extract claims safely
+	email, _ := payload.Claims["email"].(string)
+	firstName, _ := payload.Claims["given_name"].(string)
+	lastName, _ := payload.Claims["family_name"].(string)
+
+	if email == "" {
+		return nil, errors.New("invalid token payload: missing email")
+	}
+
+	// Check if user already exists
+	user, err := s.userRepo.FindByEmail(ctx, email)
+	if err == sql.ErrNoRows {
+		// Create new user if not found
+		user = &models.User{
+			Email:     email,
+			FirstName: firstName,
+			LastName:  lastName,
+			IsActive:  true,
+			Provider:  "google",
+			BaseModel: models.BaseModel{
+				CreatedAt: time.Now(),
+				UpdatedAt: time.Now(),
+			},
+		}
+
+		if err := s.userRepo.Create(ctx, user); err != nil {
+			return nil, err
+		}
+	} else if err != nil {
+		return nil, err
+	}
+
+	// Generate tokens and return a unified login response
+	return s.generateAuthResponse(user)
+}
+
+
+func (s *AuthService) generateAuthResponse(user *models.User) (*response.LoginResponse, error) {
+	accessToken, err := s.jwtManager.GenerateToken(user.ID, user.Email, user.FirstName, user.LastName)
+	if err != nil {
+		return nil, err
+	}
+
+	refreshToken := &models.RefreshToken{
+		UserID: user.ID,
+		Token:  generateSecureToken(),
+		BaseModel: models.BaseModel{
+			CreatedAt: time.Now(),
+			UpdatedAt: time.Now(),
+			ExpiredAt: timePtr(time.Now().Add(30 * 24 * time.Hour)),
+		},
+	}
+
+	if err := s.tokenRepo.SaveRefreshToken(context.Background(), refreshToken); err != nil {
+		return nil, err
+	}
+
+	return &response.LoginResponse{
+		User: response.UserResponse{
+			ID:        user.ID,
+			FirstName: user.FirstName,
+			LastName:  user.LastName,
+			Email:     user.Email,
+			IsActive:  user.IsActive,
+		},
+		AccessToken:  accessToken,
+		RefreshToken: refreshToken.Token,
+		ExpiresIn:    3600,
+	}, nil
+}
+
 
 // GetUserProfile returns user profile without sensitive data
 func (s *AuthService) GetUserProfile(ctx context.Context, userID int64) (*response.UserResponse, error) {
@@ -172,6 +261,8 @@ func (s *AuthService) GetUserProfile(ctx context.Context, userID int64) (*respon
 
 	return userResponse, nil
 }
+
+
 
 // Verify2FA checks OTP validity and activates user 2FA.
 func (s *AuthService) Verify2FA(ctx context.Context, email, code string) error {
