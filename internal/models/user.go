@@ -6,5 +6,6 @@ type User struct {
       LastName  string `json:"last_name" db:"last_name"`
 	Email    string `json:"email" db:"email"`
 	Password string `json:"-" db:"password"`
+	Provider string `json:"provider" db:"provider"`
 	IsActive bool   `json:"is_active" db:"is_active"`
 }

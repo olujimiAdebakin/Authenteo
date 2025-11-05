@@ -5,6 +5,7 @@ import (
 
 	"authentio/internal/models"
 	"authentio/internal/service"
+	_"authentio/config"
 
 	"github.com/gin-gonic/gin"
 )
@@ -109,6 +110,12 @@ func (h *AuthHandler) Register(c *gin.Context) {
 		return
 	}
 
+	// ✅ Validate request using custom validator
+	if err := Validate.Struct(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"validation_error": formatValidationError(err)})
+		return
+	}
+
 	response, err := h.authService.Register(c.Request.Context(), req)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -126,6 +133,12 @@ func (h *AuthHandler) Login(c *gin.Context) {
 		return
 	}
 
+		// ✅ Validate login input
+	if err := Validate.Struct(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"validation_error": formatValidationError(err)})
+		return
+	}
+
 	response, err := h.authService.Login(c.Request.Context(), req)
 	if err != nil {
 		c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
@@ -134,4 +147,27 @@ func (h *AuthHandler) Login(c *gin.Context) {
 
 	c.JSON(http.StatusOK, response)
 }
+
+// GoogleLogin handles Google OAuth login/signup
+func (h *AuthHandler) GoogleLogin(c *gin.Context) {
+	var req struct {
+		IDToken string `json:"id_token" binding:"required"`
+	}
+
+	// Parse the incoming token from frontend
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid request", "details": err.Error()})
+		return
+	}
+
+	// Delegate to AuthService
+	response, err := h.authService.GoogleAuth(c.Request.Context(), req.IDToken)
+	if err != nil {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
+		return
+	}
+
+	c.JSON(http.StatusOK, response)
+}
+
 
