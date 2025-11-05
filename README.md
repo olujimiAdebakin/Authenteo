@@ -1,367 +1,407 @@
-# Authentio API
+# Authentio
+
+<div align="center">
+
+**A modern, production-ready authentication API built for scale**
+
+[![Go Version](https://img.shields.io/badge/Go-1.21+-00ADD8?style=flat&logo=go)](https://go.dev/)
+[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+[![Docker](https://img.shields.io/badge/Docker-ready-2496ED?style=flat&logo=docker)](https://www.docker.com/)
+
+[Features](#features) • [Quick Start](#quick-start) • [API Reference](#api-reference) • [Architecture](#architecture)
+
+</div>
+
+---
 
 ## Overview
-Authentio is a secure, high-performance authentication and authorization API built with Go (Golang) and the Gin web framework. It provides a complete solution for user management, including JWT-based sessions, Google OAuth2, email-based Two-Factor Authentication (2FA), and secure password reset flows, all backed by PostgreSQL and Redis.
+
+Authentio is a high-performance authentication and authorization API engineered with Go. It provides enterprise-grade security features including JWT-based authentication, OAuth2 social login, two-factor authentication, and distributed rate limiting—all packaged in a Docker-ready solution.
+
+Perfect for microservices architectures, mobile apps, and modern web applications that need bulletproof auth without the overhead.
 
 ## Features
-- **Go (Golang) & Gin**: A robust and efficient backend for handling high-concurrency API requests.
-- **PostgreSQL**: The primary relational database for persistent user and token storage.
-- **Redis**: Used for distributed rate limiting and token blacklisting to enhance security and performance.
-- **JWT Authentication**: Stateless and secure authentication using JSON Web Tokens.
-- **Google OAuth2**: Seamless social login integration for a frictionless user experience.
-- **Two-Factor Authentication (2FA)**: Email-based OTP verification for an added layer of security.
-- **Docker & Docker Compose**: Fully containerized for easy setup, deployment, and scalability.
 
-## Getting Started
-The recommended way to run this project is using Docker.
+### Core Authentication
+- **🔐 JWT-Based Auth** - Stateless access and refresh tokens with automatic rotation
+- **🌐 OAuth2 Integration** - Google Sign-In support (extensible to other providers)
+- **🔑 Password Management** - Secure reset flow with email-based verification
+- **👤 User Management** - Complete CRUD operations for user profiles
+
+### Security
+- **🛡️ Two-Factor Authentication** - Email-based OTP for enhanced security
+- **⚡ Rate Limiting** - Redis-powered distributed rate limiting
+- **🚫 Token Blacklisting** - Instant token revocation support
+- **🔒 Secure Defaults** - Bcrypt password hashing, HTTPS-ready
+
+### Performance & Scalability
+- **🚀 Go-Powered** - Concurrent request handling and minimal resource footprint
+- **📦 Containerized** - Docker Compose setup for consistent environments
+- **💾 PostgreSQL** - ACID-compliant data persistence
+- **⚙️ Redis** - High-speed caching and session management
+
+## Quick Start
+
+### Prerequisites
+- Docker & Docker Compose
+- A Google Cloud project (for OAuth2)
+- SMTP credentials (Gmail recommended for development)
 
 ### Installation
-1.  **Clone the repository:**
-    ```bash
-    git clone https://github.com/your-username/authentio.git
-    cd authentio
-    ```
 
-2.  **Create an environment file:**
-    Create a `.env` file in the root directory and populate it with the variables listed below.
+1. **Clone and navigate**
+   ```bash
+   git clone https://github.com/your-username/authentio.git
+   cd authentio
+   ```
 
-3.  **Build and run with Docker Compose:**
-    ```bash
-    docker-compose up --build -d
-    ```
-    The API will be available at `http://localhost:8080`.
+2. **Configure environment**
+   ```bash
+   cp .env.example .env
+   # Edit .env with your credentials (see configuration below)
+   ```
 
-### Environment Variables
-Create a `.env` file in the project root with the following variables:
+3. **Launch the stack**
+   ```bash
+   docker-compose up --build
+   ```
 
-| Variable                | Description                                                | Example                                                        |
-| ----------------------- | ---------------------------------------------------------- | -------------------------------------------------------------- |
-| `SERVER_PORT`           | Port for the API server.                                   | `8080`                                                         |
-| `APP_ENV`               | Application environment.                                   | `development` or `production`                                  |
-| `POSTGRES_DSN`          | PostgreSQL connection string.                              | `postgres://postgres:secret@authentio_db:5432/authentio_db?sslmode=disable` |
-| `REDIS_ADDR`            | Redis server address.                                      | `authentio_redis:6379`                                         |
-| `REDIS_PASS`            | Redis password (if any).                                   | ``                                                             |
-| `JWT_SECRET`            | Secret key for signing JWTs.                               | `a_very_strong_and_long_secret_key`                            |
-| `SMTP_HOST`             | SMTP server for sending emails.                            | `smtp.gmail.com`                                               |
-| `SMTP_PORT`             | SMTP server port.                                          | `587`                                                          |
-| `SMTP_USERNAME`         | Your email address for sending emails.                     | `your.email@example.com`                                       |
-| `SMTP_PASSWORD`         | Your email app password or token.                          | `yourapppassword`                                              |
-| `SMTP_FROM`             | The "From" address for outgoing emails.                    | `your.email@example.com`                                       |
-| `GOOGLE_CLIENT_ID`      | Google OAuth2 Client ID.                                   | `your-google-client-id.apps.googleusercontent.com`             |
-| `GOOGLE_CLIENT_SECRET`  | Google OAuth2 Client Secret.                               | `GOCSPX-your-secret`                                           |
-| `GOOGLE_REDIRECT_URL`   | Callback URL registered with Google.                       | `http://localhost:8080/api/v1/auth/google/callback`            |
+4. **Verify it's running**
+   ```bash
+   curl http://localhost:8080/health
+   ```
 
-## API Documentation
+The API will be accessible at `http://localhost:8080/api/v1`
+
+## Configuration
+
+Create a `.env` file with these variables:
+
+```env
+# Server
+SERVER_PORT=8080
+APP_ENV=development
+
+# Database
+POSTGRES_DSN=postgres://postgres:secret@db:5432/authentio_db?sslmode=disable
+
+# Redis
+REDIS_ADDR=redis:6379
+REDIS_PASS=
+
+# Security
+JWT_SECRET=your-super-secret-jwt-key-min-32-chars
+
+# Email (SMTP)
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USERNAME=your-email@gmail.com
+SMTP_PASSWORD=your-app-password
+SMTP_FROM=noreply@yourdomain.com
+
+# OAuth2 (Google)
+GOOGLE_CLIENT_ID=your-client-id.apps.googleusercontent.com
+GOOGLE_CLIENT_SECRET=GOCSPX-your-secret
+GOOGLE_REDIRECT_URL=http://localhost:8080/api/v1/auth/google/callback
+```
+
+**Security Note**: Use app-specific passwords for Gmail and never commit your `.env` file.
+
+## Architecture
+
+```
+┌─────────────┐
+│   Client    │
+└──────┬──────┘
+       │
+       ▼
+┌─────────────┐      ┌──────────┐
+│  Gin Router │◄────►│  Redis   │ (Rate Limiting, Blacklist)
+└──────┬──────┘      └──────────┘
+       │
+       ▼
+┌─────────────┐      ┌──────────┐
+│  Handlers   │◄────►│PostgreSQL│ (User Data, Tokens)
+└─────────────┘      └──────────┘
+```
+
+**Tech Stack:**
+- **Framework**: Gin (fastest Go HTTP router)
+- **Database**: PostgreSQL 15+ with GORM
+- **Cache**: Redis 7+ for distributed operations
+- **Authentication**: JWT with RS256 signing
+- **Deployment**: Docker + Docker Compose
+
+## API Reference
+
 ### Base URL
-`/api/v1`
+```
+http://localhost:8080/api/v1
+```
 
-### Endpoints
-#### POST /auth/register
-**Description**: Registers a new user.
+### Authentication Endpoints
 
-**Request**:
-```json
+#### Register User
+```http
+POST /auth/register
+Content-Type: application/json
+
 {
-    "first_name": "John",
-    "last_name": "Doe",
-    "email": "john.doe@example.com",
-    "password": "StrongPassword123!"
+  "first_name": "John",
+  "last_name": "Doe",
+  "email": "john@example.com",
+  "password": "SecurePass123!"
 }
 ```
 
-**Response** (201 Created):
+**Response (201)**
 ```json
 {
-    "user": {
-        "id": 1,
-        "first_name": "John",
-        "last_name": "Doe",
-        "email": "john.doe@example.com",
-        "is_active": true,
-        "created_at": "2023-10-27T10:00:00Z"
-    },
-    "message": "Registration successful"
-}
-```
-
-**Errors**:
-- `400 Bad Request`: Validation failed (e.g., weak password, invalid email).
-- `409 Conflict`: Email already exists.
-
----
-#### POST /auth/login
-**Description**: Authenticates a user and returns JWT tokens.
-
-**Request**:
-```json
-{
-    "email": "john.doe@example.com",
-    "password": "StrongPassword123!"
-}
-```
-
-**Response** (200 OK):
-```json
-{
-    "user": {
-        "id": 1,
-        "first_name": "John",
-        "last_name": "Doe",
-        "email": "john.doe@example.com",
-        "is_active": true
-    },
-    "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-    "refresh_token": "a1b2c3d4e5f6...",
-    "expires_in": 3600
-}
-```
-
-**Errors**:
-- `401 Unauthorized`: Invalid email or password.
-
----
-#### POST /auth/refresh
-**Description**: Generates a new access token using a valid refresh token.
-
-**Request**:
-```json
-{
-    "refresh_token": "a1b2c3d4e5f6..."
-}
-```
-
-**Response** (200 OK):
-```json
-{
-    "user": {
-        "id": 1,
-        "first_name": "John",
-        "last_name": "Doe",
-        "email": "john.doe@example.com",
-        "is_active": true
-    },
-    "access_token": "new_eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-    "refresh_token": "new_a1b2c3d4e5f6...",
-    "expires_in": 3600
-}
-```
-
-**Errors**:
-- `400 Bad Request`: Invalid or expired refresh token.
-
----
-#### POST /auth/google/login
-**Description**: Authenticates a user via a Google ID token (client-side flow).
-
-**Request**:
-```json
-{
-    "id_token": "google_id_token_from_frontend"
-}
-```
-
-**Response** (200 OK):
-```json
-{
-    "user": {
-        "id": 2,
-        "first_name": "Jane",
-        "last_name": "Doe",
-        "email": "jane.doe.google@example.com",
-        "is_active": true
-    },
-    "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-    "refresh_token": "a1b2c3d4e5f6...",
-    "expires_in": 3600
-}
-```
-
-**Errors**:
-- `401 Unauthorized`: Invalid Google token.
-
----
-#### POST /auth/forgot-password
-**Description**: Sends a password reset code to the user's email.
-
-**Request**:
-```json
-{
-    "email": "john.doe@example.com"
-}
-```
-
-**Response** (200 OK):
-```json
-{
-    "message": "Password reset email sent"
-}
-```
-
-**Errors**:
-- `400 Bad Request`: Invalid email format.
-
----
-#### POST /auth/reset-password
-**Description**: Resets the user's password using the code from the email.
-
-**Request**:
-```json
-{
-    "email": "john.doe@example.com",
-    "code": "123456",
-    "new_password": "NewStrongPassword123!"
-}
-```
-
-**Response** (200 OK):
-```json
-{
-    "message": "Password reset successful"
-}
-```
-
-**Errors**:
-- `400 Bad Request`: Invalid code, expired code, or weak new password.
-
----
-#### POST /auth/2fa/verify
-**Description**: Verifies a 2FA code during the login process for users with 2FA enabled.
-
-**Request**:
-```json
-{
-    "email": "john.doe@example.com",
-    "code": "654321"
-}
-```
-
-**Response** (200 OK):
-```json
-{
-    "message": "2FA verification successful"
-}
-```
-
-**Errors**:
-- `400 Bad Request`: Invalid or expired 2FA code.
-
----
-#### POST /2fa/enableOtp
-**Description**: Enables email-based 2FA for the authenticated user. (Requires Bearer Token)
-
-**Request**:
-*(No request body)*
-
-**Response** (200 OK):
-```json
-{
-    "message": "2FA enabled successfully"
-}
-```
-
-**Errors**:
-- `401 Unauthorized`: Invalid or missing JWT token.
-
----
-#### POST /2fa/disableOtp
-**Description**: Disables 2FA for the authenticated user. (Requires Bearer Token)
-
-**Request**:
-*(No request body)*
-
-**Response** (200 OK):
-```json
-{
-    "message": "2FA disabled successfully"
-}
-```
-
-**Errors**:
-- `401 Unauthorized`: Invalid or missing JWT token.
-
----
-#### POST /2fa/sendOtp
-**Description**: Sends a new 2FA OTP code to the user's email. (Requires Bearer Token)
-
-**Request**:
-```json
-{
-    "email": "john.doe@example.com"
-}
-```
-
-**Response** (200 OK):
-```json
-{
-    "message": "OTP sent successfully"
-}
-```
-
-**Errors**:
-- `401 Unauthorized`: Invalid or missing JWT token.
-- `500 Internal Server Error`: Failed to send OTP email.
-
----
-#### GET /user/getProfile
-**Description**: Retrieves the authenticated user's profile. (Requires Bearer Token)
-
-**Request**:
-*(No request body)*
-
-**Response** (200 OK):
-```json
-{
+  "user": {
     "id": 1,
     "first_name": "John",
     "last_name": "Doe",
-    "email": "john.doe@example.com",
+    "email": "john@example.com",
+    "is_active": true,
+    "created_at": "2025-11-05T10:00:00Z"
+  },
+  "message": "Registration successful"
+}
+```
+
+#### Login
+```http
+POST /auth/login
+Content-Type: application/json
+
+{
+  "email": "john@example.com",
+  "password": "SecurePass123!"
+}
+```
+
+**Response (200)**
+```json
+{
+  "user": {
+    "id": 1,
+    "first_name": "John",
+    "last_name": "Doe",
+    "email": "john@example.com",
     "is_active": true
+  },
+  "access_token": "eyJhbGciOiJIUzI1NiIs...",
+  "refresh_token": "a1b2c3d4e5f6...",
+  "expires_in": 3600
 }
 ```
 
-**Errors**:
-- `401 Unauthorized`: Invalid or missing JWT token.
-- `404 Not Found`: User not found.
+#### Refresh Token
+```http
+POST /auth/refresh
+Content-Type: application/json
+
+{
+  "refresh_token": "a1b2c3d4e5f6..."
+}
+```
+
+#### Password Reset Flow
+```http
+# Step 1: Request reset
+POST /auth/forgot-password
+{
+  "email": "john@example.com"
+}
+
+# Step 2: Reset with code
+POST /auth/reset-password
+{
+  "email": "john@example.com",
+  "code": "123456",
+  "new_password": "NewSecurePass456!"
+}
+```
+
+### OAuth2 Endpoints
+
+#### Google Login (Frontend Flow)
+```http
+POST /auth/google/login
+Content-Type: application/json
+
+{
+  "id_token": "google_id_token_from_gsi"
+}
+```
+
+#### Google Login (Server-Side Flow)
+```http
+# Step 1: Redirect to Google
+GET /auth/google/redirect
+
+# Step 2: Handle callback (automatic)
+GET /auth/google/callback?code=...
+```
+
+### Two-Factor Authentication
+
+#### Enable 2FA
+```http
+POST /2fa/enableOtp
+Authorization: Bearer {access_token}
+```
+
+#### Send OTP Code
+```http
+POST /2fa/sendOtp
+Authorization: Bearer {access_token}
+Content-Type: application/json
+
+{
+  "email": "john@example.com"
+}
+```
+
+#### Verify OTP
+```http
+POST /auth/2fa/verify
+Content-Type: application/json
+
+{
+  "email": "john@example.com",
+  "code": "123456"
+}
+```
+
+#### Disable 2FA
+```http
+POST /2fa/disableOtp
+Authorization: Bearer {access_token}
+```
+
+### User Management
+
+#### Get Profile
+```http
+GET /user/getProfile
+Authorization: Bearer {access_token}
+```
+
+#### Update Profile
+```http
+PUT /user/updateProfile
+Authorization: Bearer {access_token}
+Content-Type: application/json
+
+{
+  "first_name": "Jonathan",
+  "last_name": "Doer",
+  "email": "jonathan@example.com"
+}
+```
+
+### Error Responses
+
+All errors follow this structure:
+```json
+{
+  "error": "Error message",
+  "code": "ERROR_CODE"
+}
+```
+
+Common status codes:
+- `400` - Bad Request (validation errors)
+- `401` - Unauthorized (invalid/missing token)
+- `404` - Not Found
+- `409` - Conflict (duplicate email)
+- `429` - Too Many Requests (rate limited)
+- `500` - Internal Server Error
+
+## Development
+
+### Running Tests
+```bash
+go test ./... -v
+```
+
+### Database Migrations
+```bash
+# Migrations run automatically on startup
+# To create new migrations, add to internal/database/migrations/
+```
+
+### Local Development Without Docker
+```bash
+# Ensure PostgreSQL and Redis are running locally
+go mod download
+go run cmd/api/main.go
+```
+
+## Security Best Practices
+
+1. **Environment Variables**: Never commit `.env` files
+2. **JWT Secret**: Use a strong, randomly generated secret (min 32 chars)
+3. **HTTPS**: Always use HTTPS in production
+4. **Rate Limiting**: Configure appropriate limits for your use case
+5. **Password Policy**: Enforce strong passwords (8+ chars, mixed case, numbers, symbols)
+6. **2FA**: Enable for sensitive operations
+7. **Token Rotation**: Refresh tokens expire and should be rotated regularly
+
+## Troubleshooting
+
+### Database Connection Issues
+```bash
+# Check if PostgreSQL is running
+docker-compose ps
+
+# View database logs
+docker-compose logs db
+```
+
+### Redis Connection Issues
+```bash
+# Verify Redis is accessible
+docker-compose exec redis redis-cli ping
+# Expected: PONG
+```
+
+### SMTP/Email Issues
+- Verify SMTP credentials are correct
+- For Gmail: Enable 2FA and create an App Password
+- Check firewall rules for outbound port 587
+
+### OAuth2 Issues
+- Verify redirect URL matches Google Cloud Console exactly
+- Ensure client ID and secret are correct
+- Check that OAuth consent screen is configured
+
+## Roadmap
+
+- [ ] Multi-provider OAuth2 (GitHub, Facebook, Apple)
+- [ ] TOTP-based 2FA (Google Authenticator)
+- [ ] Role-based access control (RBAC)
+- [ ] Session management dashboard
+- [ ] Audit logging
+- [ ] API key authentication
+- [ ] WebAuthn/Passkey support
+
+## Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
+
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## Author
+
+**Adebakin Olujimi**  
+[@olujimi_the_dev](https://x.com/olujimi_the_dev)
 
 ---
-#### PUT /user/updateProfile
-**Description**: Updates the authenticated user's profile information. (Requires Bearer Token)
 
-**Request**:
-```json
-{
-    "first_name": "Jonathan",
-    "last_name": "Doer",
-    "email": "jonathan.doer@example.com"
-}
-```
-
-**Response** (200 OK):
-```json
-{
-    "message": "Profile updated successfully"
-}
-```
-
-**Errors**:
-- `401 Unauthorized`: Invalid or missing JWT token.
-- `409 Conflict`: New email is already in use.
-
----
-#### GET /health
-**Description**: A public endpoint to check the health of the service.
-
-**Request**:
-*(No request body)*
-
-**Response** (200 OK):
-```json
-{
-    "status": "ok"
-}
-```
-
-**Errors**:
-- None.
-
-[![Readme was generated by Dokugen](https://img.shields.io/badge/Readme%20was%20generated%20by-Dokugen-brightgreen)](https://www.npmjs.com/package/dokugen)
+<div align="center">
+Built with ❤️ using Go and modern cloud-native technologies
+</div>
