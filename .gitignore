@@ -1,1 +1,46 @@
+# Binaries
+*.exe
+*.dll
+*.so
+*.dylib
+*.test
+
+# Go coverage
+*.out
+coverage/
+coverage.txt
+
+# Vendor (if not vendoring intentionally)
+vendor/
+
+# Workspace file
+go.work
+
+# Environment files
 .env
+.env.*
+
+# IDE/editor
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# System files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Build artifacts
+/dist/
+/build/
+/bin/
+/tmp/
+/*.tmp
+
+# Docker Compose files
+docker-compose.yaml
+docker-compose.yml
