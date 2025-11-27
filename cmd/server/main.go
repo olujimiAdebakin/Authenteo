@@ -14,13 +14,13 @@ import (
 	"authentio/internal/handler"
 	"authentio/internal/router"
 	"authentio/internal/service"
-	"authentio/pkg/email" 
+	"authentio/pkg/email"
 	"authentio/pkg/jwt"
 	"authentio/pkg/logger"
-	
+
 	"github.com/gin-gonic/gin"
-	"github.com/redis/go-redis/v9"
 	_ "github.com/jackc/pgx/v5/stdlib"
+	"github.com/redis/go-redis/v9"
 
 	// Swagger imports
 	_ "authentio/docs" // This imports your generated docs
@@ -106,6 +106,11 @@ func main() {
 	}
 	logger.Info("Database connection established")
 
+	// Run database migrations
+	if err := dbpkg.RunMigrations(db); err != nil {
+		logger.Warn("failed to run migrations - they may already exist", "error", err)
+	}
+
 	// Initialize Redis client for rate limiting, caching, and session management
 	redisClient := redis.NewClient(&redis.Options{
 		Addr:     cfg.RedisAddr,
@@ -113,9 +118,14 @@ func main() {
 		DB:       0, // uses default DB
 	})
 	if err := redisClient.Ping(context.Background()).Err(); err != nil {
-		logger.Fatal("failed to connect to Redis", "error", err)
+		logger.Warn("failed to connect to Redis - some features may be unavailable", "error", err)
+		// Continue without Redis in development mode
+		if cfg.Env == "production" {
+			logger.Fatal("Redis required in production", "error", err)
+		}
+	} else {
+		logger.Info("Redis connection established")
 	}
-	logger.Info("Redis connection established")
 	defer func() {
 		if err := redisClient.Close(); err != nil {
 			logger.Error("error closing Redis client", "error", err)
@@ -131,6 +141,9 @@ func main() {
 
 	// Initialize JWT manager for token signing and verification
 	jwtManager := jwt.NewManager(cfg.JWTSecret)
+
+	// Initialize validator for request validation
+	handler.InitValidator()
 
 	// Initialize data repositories
 	userRepo := dbpkg.NewUserRepository(db)
@@ -181,3 +194,4 @@ func main() {
 		logger.Info("Server stopped gracefully")
 	}
 }
+

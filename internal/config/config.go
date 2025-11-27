@@ -1,12 +1,12 @@
 package config
 
-
 import (
-	"time"
-	"github.com/caarlos0/env/v9"
-	"github.com/joho/godotenv"
 	"log"
 	"strconv"
+	"time"
+
+	"github.com/caarlos0/env/v9"
+	"github.com/joho/godotenv"
 )
 
 type Config struct {
@@ -23,9 +23,9 @@ type Config struct {
 
 	SMTPHost     string `env:"SMTP_HOST" envDefault:"smtp.gmail.com"`
 	SMTPPort     int    `env:"SMTP_PORT" envDefault:"587"`
-	SMTPUsername string `env:"SMTP_USERNAME"`
-	SMTPPassword string `env:"SMTP_PASSWORD,required"`
-	SMTPFrom     string `env:"SMTP_FROM,required"` 
+	SMTPUsername string `env:"SMTP_USERNAME" envDefault:""`
+	SMTPPassword string `env:"SMTP_PASSWORD" envDefault:""`
+	SMTPFrom     string `env:"SMTP_FROM" envDefault:"noreply@example.com"` 
 }
 
 // This loads the config from environment variables and optionally .env file

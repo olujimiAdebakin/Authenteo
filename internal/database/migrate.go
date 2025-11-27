@@ -1,6 +1,5 @@
 package database
 
-
 import (
 	"database/sql"
 	"fmt"
@@ -9,19 +8,19 @@ import (
 	"path/filepath"
 )
 
-// RunMigrations executes the complete schema
+// RunMigrations executes the migration files to setup the database schema
 func RunMigrations(db *sql.DB) error {
-	// Read the schema file
-	schemaPath := filepath.Join("database", "schema.sql")
-	schemaSQL, err := os.ReadFile(schemaPath)
+	// Read the migration file
+	migrationPath := filepath.Join("migrations", "001_init_schema.up.sql")
+	migrationSQL, err := os.ReadFile(migrationPath)
 	if err != nil {
-		return fmt.Errorf("failed to read schema file: %w", err)
+		return fmt.Errorf("failed to read migration file: %w", err)
 	}
 
-	// Execute the schema
-	_, err = db.Exec(string(schemaSQL))
+	// Execute the migration
+	_, err = db.Exec(string(migrationSQL))
 	if err != nil {
-		return fmt.Errorf("failed to execute schema: %w", err)
+		return fmt.Errorf("failed to execute migration: %w", err)
 	}
 
 	log.Println("Database schema created successfully")

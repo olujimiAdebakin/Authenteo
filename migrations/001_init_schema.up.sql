@@ -5,6 +5,19 @@
 -- =============================================================================
 
 -- =============================================================================
+-- HELPER FUNCTIONS FOR TRIGGERS
+-- =============================================================================
+-- Create function to automatically update updated_at timestamp
+-- =============================================================================
+CREATE OR REPLACE FUNCTION update_updated_at_column()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.updated_at = CURRENT_TIMESTAMP;
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- =============================================================================
 -- USERS TABLE (UPDATED FOR OAUTH)
 -- =============================================================================
 -- Stores user accounts with support for both local and OAuth authentication

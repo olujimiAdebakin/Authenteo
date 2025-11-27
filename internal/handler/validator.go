@@ -1,7 +1,5 @@
 package handler
 
-
-
 import (
 	"regexp"
 	"strings"
@@ -27,8 +25,65 @@ func InitValidator() {
 	// - at least one special character
 	// - at least 8 chars total
 	Validate.RegisterValidation("password", func(fl validator.FieldLevel) bool {
-		re := regexp.MustCompile(`^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{8,}$`)
-		return re.MatchString(fl.Field().String())
+		password := fl.Field().String()
+		
+		// Check minimum length
+		if len(password) < 8 {
+			return false
+		}
+		
+		// Check for at least one lowercase letter
+		hasLower := false
+		for _, r := range password {
+			if r >= 'a' && r <= 'z' {
+				hasLower = true
+				break
+			}
+		}
+		if !hasLower {
+			return false
+		}
+		
+		// Check for at least one uppercase letter
+		hasUpper := false
+		for _, r := range password {
+			if r >= 'A' && r <= 'Z' {
+				hasUpper = true
+				break
+			}
+		}
+		if !hasUpper {
+			return false
+		}
+		
+		// Check for at least one digit
+		hasDigit := false
+		for _, r := range password {
+			if r >= '0' && r <= '9' {
+				hasDigit = true
+				break
+			}
+		}
+		if !hasDigit {
+			return false
+		}
+		
+		// Check for at least one special character
+		hasSpecial := false
+		specialChars := "!@#$%^&*()-_=+[]{}|;:',.<>?/`~"
+		for _, r := range password {
+			for _, s := range specialChars {
+				if r == s {
+					hasSpecial = true
+					break
+				}
+			}
+			if hasSpecial {
+				break
+			}
+		}
+		
+		return hasSpecial
 	})
 
 }
