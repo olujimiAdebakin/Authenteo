@@ -44,3 +44,4 @@ logs/
 # Docker Compose files
 docker-compose.yaml
 docker-compose.yml
+.env
